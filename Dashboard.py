@@ -1,30 +1,29 @@
 import streamlit as st
-from PIL import Image, ImageOps
 import tensorflow as tf
+from tensorflow.keras.preprocessing import image
 import numpy as np
+from PIL import Image
 
-model = tf.keras.models.load_model('C:/Users/tebrick_KING/FlavorSnap/model.keras')
+# Load the trained model
+model = tf.keras.models.load_model("C:/Users/tebrick_KING/FlavorSnap/model.keras")
 
-def preprocess_image(image):
-    size = (224, 224)
-    image = ImageOps.fit(image, size, Image.ANTIALIAS)
-    image_array = np.asarray(image)
-    normalized_image_array = (image_array.astype(np.float32) / 127.0) - 1
-    return np.expand_dims(normalized_image_array, axis=0)
+# Class labels (modify based on your dataset)
+class_names = ["Akara", "Bread", "Egusi", "Moi Moi", "Rice and Stew", "Yam"]
 
-st.title('Food Image Classifier')
-st.write('Upload an image of a food item, and the model will predict its category.')
+st.title("🍔 FlavorSnap - Food Recognition")
 
-uploaded_file = st.file_uploader('Choose an image...', type=['jpg', 'jpeg', 'png'])
+uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "png", "jpeg"])
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    st.image(image, caption='Uploaded Image.', use_column_width=True)
-    st.write('Classifying...')
-    processed_image = preprocess_image(image)
-    prediction = model.predict(processed_image)
-    predicted_class = np.argmax(prediction, axis=1)
-    class_names = ['Bread', 'Rice', 'Pasta', 'Salad', 'Fruit', 'Dessert']  # Update with your actual class names
-    st.write(f'Prediction: {class_names[predicted_class[0]]}')
+    img = Image.open(uploaded_file).resize((224, 224))
+    st.image(img, caption="Uploaded Image", use_column_width=True)
 
+    # Preprocess image
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0) / 255.0  # Normalize
 
+    # Make prediction
+    predictions = model.predict(img_array)
+    predicted_class = class_names[np.argmax(predictions)]
+
+    st.write(f"### 🏷️ Identified as: **{predicted_class}**")
