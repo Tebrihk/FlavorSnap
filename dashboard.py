@@ -1,55 +1,80 @@
-
-import streamlit as st
+import panel as pn
 import torch
-from torchvision import models, transforms
+import torchvision.transforms as transforms
 from PIL import Image
 import os
 import shutil
+from datetime import datetime
 
-# Config
-MODEL_PATH = "food_classifier.pth"
-CLASS_NAMES = ["Akara", "Bread", "Egusi", "Moi Moi", "Rice and Stew", "Yam"]
-SAVE_DIR = "uploaded_images"
+pn.extension()
 
-# Model setup
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = models.resnet18()
-model.fc = torch.nn.Linear(model.fc.in_features, len(CLASS_NAMES))
-model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+# Load class names
+with open("food_classes.txt", "r") as f:
+    class_names = [line.strip() for line in f.readlines()]
+
+# Load model
+model = torch.load("model.pth", map_location=torch.device('cpu'))
 model.eval()
 
-# Image transform
+# Image transform (adjust to your model's training)
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor()
 ])
 
-st.title("🍔 FlavorSnap - Food Classifier")
+# Upload widget
+upload = pn.widgets.FileInput(accept=".jpg,.png,.jpeg")
 
-uploaded_file = st.file_uploader("Upload a food image...", type=["jpg", "jpeg", "png"])
+# Output widgets
+output = pn.pane.Markdown("")
+image_pane = pn.pane.PNG()
+prediction_pane = pn.pane.Markdown("")
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded Image", use_column_width=True)
+# Create folder if it doesn’t exist
+def ensure_folder(folder):
+    os.makedirs(folder, exist_ok=True)
 
-    # Preprocess
-    img_tensor = transform(image).unsqueeze(0)
+# Handle image upload
+def classify_image(event):
+    if upload.value is None:
+        output.object = "Please upload an image."
+        return
+
+    # Load and preprocess image
+    image = Image.open(upload.file).convert("RGB")
+    image_tensor = transform(image).unsqueeze(0)
 
     # Predict
     with torch.no_grad():
-        outputs = model(img_tensor)
-        _, predicted = torch.max(outputs, 1)
-        label = CLASS_NAMES[predicted.item()]
+        output_probs = torch.nn.functional.softmax(model(image_tensor), dim=1)
+        confidence, predicted_idx = torch.max(output_probs, 1)
+        predicted_class = class_names[predicted_idx.item()]
+        confidence = confidence.item()
 
-    st.markdown(f"### ✅ Predicted Class: **{label}**")
+    # Show image and prediction
+    image_pane.object = upload.value
+    prediction_pane.object = f"### 🍽️ Predicted: **{predicted_class}**\n**Confidence:** {confidence:.2f}"
 
-    # Save to correct folder
-    label_folder = os.path.join(SAVE_DIR, label)
-    os.makedirs(label_folder, exist_ok=True)
+    # Save image to folder
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"{predicted_class}_{timestamp}.jpg"
+    save_folder = predicted_class if confidence > 0.7 else "unknown"
+    ensure_folder(f"uploads/{save_folder}")
+    image.save(f"uploads/{save_folder}/{filename}")
 
-    file_path = os.path.join(label_folder, uploaded_file.name)
-    with open(file_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
+    output.object = f"📁 Image saved to: `uploads/{save_folder}/{filename}`"
 
-    st.success(f"Image saved to `{label_folder}`")
+# Watch for image upload
+upload.param.watch(classify_image, 'value')
 
+# Layout
+dashboard = pn.Column(
+    "# 🍔 FlavorSnap (Panel Edition)",
+    "Upload a food image to classify and store it by category.",
+    upload,
+    image_pane,
+    prediction_pane,
+    output
+)
+
+dashboard.servable()
