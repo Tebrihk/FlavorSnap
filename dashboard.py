@@ -1,5 +1,3 @@
-# dashboard.py
-
 import panel as pn
 import torch
 import torchvision.transforms as transforms
@@ -34,16 +32,28 @@ def save_image(image_obj, predicted_class, image_name="uploaded_image.jpg"):
 # Panel UI
 image_input = pn.widgets.FileInput(accept='image/*')
 output = pn.pane.Markdown("Upload an image of food 🍲")
+image_preview = pn.pane.Image(width=300, height=300, visible=False)
+spinner = pn.indicators.LoadingSpinner(value=False, width=50)
 
 def classify(event=None):
     if image_input.value is None:
         output.object = "⚠️ Please upload an image first."
+        image_preview.visible = False
         return
     try:
         image = Image.open(io.BytesIO(image_input.value)).convert('RGB')
-        img_tensor = transform(image).unsqueeze(0)
 
-        # Predict
+        # Update preview
+        image_preview.object = image
+        image_preview.visible = True
+
+
+        # Start spinner
+        spinner.value = True
+        output.object = "🔍 Classifying..."
+
+        # Transform and predict
+        img_tensor = transform(image).unsqueeze(0)
         with torch.no_grad():
             outputs = model(img_tensor)
             _, pred = torch.max(outputs, 1)
@@ -54,15 +64,19 @@ def classify(event=None):
         output.object = f"✅ Identified as **{predicted_class}**. Image saved!"
     except Exception as e:
         output.object = f"❌ Error: {str(e)}"
+    finally:
+        spinner.value = False
 
-run_button = pn.widgets.Button(name='Classify Image', button_type='primary')
+run_button = pn.widgets.Button(name='Classify', button_type='primary')
 run_button.on_click(classify)
 
 app = pn.Column(
     "# 🍽️ FlavorSnap",
-    "Upload an image and get instant food classification!",
+    "Upload an image and click the button to classify your food!",
     image_input,
     run_button,
+    spinner,
+    image_preview,
     output,
 )
 
