@@ -18,7 +18,7 @@ FlavorSnap is a food image classification web app powered by deep learning. Simp
 ---
 
  Model Info
-
+- frontend: `html,css javascript,typescript'
 - Backbone: `ResNet18`
 - Framework: `PyTorch`
 - Custom classes:  
@@ -29,4 +29,4 @@ FlavorSnap is a food image classification web app powered by deep learning. Simp
   - `Rice and Stew`
   - `Yam`
 
-The model is saved at:  
+The link to the telegram group for issues communication  https://t.me/+Tf3Ll4oRiGk5ZTM0
