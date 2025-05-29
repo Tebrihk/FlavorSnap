@@ -1,5 +1,5 @@
 # FlavorSnap
-FlavorSnap is a food image classification web app powered by deep learning. Simply upload a picture of a local dish, and the model will tell you what it is. The app uses a fine-tuned ResNet18 model to recognize and classify various food types such as Akara, Bread, Egusi, Moi Moi, Rice and Stew, and Yam.
+FlavorSnap is a food image classification web app powered by deep learning. Simply upload a picture of a local dish, and the model will tell you what it is. The app uses a fine-tuned ResNet18 model to recognize and classify various food types such as Akara, Bread, Egusi, Moi Moi, Rice and Stew, and Yam (with the option to add more food variety).
 
  Features
 
@@ -12,9 +12,11 @@ FlavorSnap is a food image classification web app powered by deep learning. Simp
 - Automatic Image Organization  
   Uploaded images are saved into their predicted class folders.
 
-- Simple Web UI with Panel  
-  Intuitive interface built with Panel (based on Bokeh).
+- Web UI  
+  Intuitive interface built with html css javascript and typescript.
 
+- backend
+- using nextjs.
 ---
 
  Model Info
